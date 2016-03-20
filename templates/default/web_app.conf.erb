@@ -1,0 +1,55 @@
+<% if node['apache']['version'] != '2.4' -%>
+NameVirtualHost *:<%= @params[:server_port] %>
+<% end -%>
+<VirtualHost *:<%= @params[:server_port] %>>
+  ServerName <%= @params[:server_name] %>
+  <% if @params[:server_aliases] -%>
+  ServerAlias <%= @params[:server_aliases].join " " %>
+  <% end -%>
+  DocumentRoot <%= @params[:docroot] %>
+  
+  <Directory <%= @params[:docroot] %>>
+    Options <%= [@params[:directory_options] || "FollowSymLinks" ].flatten.join " " %>
+    AllowOverride <%= [@params[:allow_override] || "None" ].flatten.join " " %>
+  <% if node['apache']['version'] == '2.4' -%>
+    Require all granted
+  <% else -%>
+    Order allow,deny
+    Allow from all
+  <% end -%>
+  </Directory>
+
+  <Directory />
+    Options FollowSymLinks
+    AllowOverride None
+  </Directory>
+
+  RewriteEngine On
+  <%- if node['apache']['version'] == '2.4' -%>
+  LogLevel info rewrite:trace1
+  <%- else -%>
+  LogLevel info
+  RewriteLog <%= node['apache']['log_dir'] %>/<%= @application_name %>-rewrite.log
+  RewriteLogLevel 0
+  <%- end -%>
+
+  ErrorLog <%= node['apache']['log_dir'] %>/<%= @params[:name] %>-error<%= @params[:php] %>.log
+  CustomLog <%= node['apache']['log_dir'] %>/<%= @params[:name] %>-access.log combined
+
+  <% if @params[:directory_index] -%>
+  DirectoryIndex <%= [@params[:directory_index]].flatten.join " " %>
+  <% end -%>
+
+  <% if @params[:use_php] -%>
+  <IfModule mod_fastcgi.c>
+    AddHandler php5-fcgi .php
+    Action php5-fcgi /php5-fcgi
+    Alias /php5-fcgi /usr/lib/cgi-bin/php5-fcgi-<%= @params[:server_name] %>
+    FastCgiExternalServer /usr/lib/cgi-bin/php5-fcgi-<%= @params[:server_name] %> -host <%= @params[:php_fpm_host] %>:<%= @params[:php_fpm_port] %> -pass-header Authorization
+  </IfModule>
+
+  <Directory /usr/lib/cgi-bin>
+    Require all granted
+  </Directory>
+  <% end -%>
+</VirtualHost>

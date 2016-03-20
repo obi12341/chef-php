@@ -1,0 +1,16 @@
+DEPENDENCIES
+  site-lamp
+    path: .
+    metadata: true
+
+GRAPH
+  apache2 (3.1.0)
+  apt (3.0.0)
+  php-fpm (0.7.5)
+    apt (>= 0.0.0)
+    yum (>= 3.0)
+  site-lamp (1.0.11)
+    apache2 (~> 3.1.0)
+    apt (~> 3.0.0)
+    php-fpm (~> 0.7.5)
+  yum (3.10.0)
